@@ -13,6 +13,7 @@ import { filterMessage, FilterResult } from './filter';
 import { rewriterService } from './rewriter';
 import { dedupStore } from './dedup-store';
 import { postsStore } from '../data/posts-store';
+import { notifyReviewers, notifyMonitoringComplete } from '../services/notifier';
 import { config } from '../config';
 
 export interface MonitorStats {
@@ -76,6 +77,17 @@ export class ChannelMonitor {
       }
 
       await userbot.disconnect();
+
+      // Отправляем дайджест ревьюерам
+      try {
+        await notifyMonitoringComplete(
+          this.stats.postsCreated,
+          this.stats.channelsChecked,
+          this.stats.errors,
+        );
+      } catch (notifyError) {
+        console.warn('⚠️ Не удалось отправить дайджест:', notifyError);
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.stats.errors.push(`Критическая ошибка: ${errorMsg}`);
@@ -144,19 +156,36 @@ export class ChannelMonitor {
         );
 
         if (rewritten) {
-          // Добавляем в очередь постов
+          // Добавляем в очередь постов со статусом review (ждёт одобрения)
           const post = postsStore.add({
             content: rewritten.content,
             rubric: rewritten.rubric,
             topic: `Мониторинг: ${channel.name}`,
+            status: 'review',
+            source: {
+              type: 'monitoring',
+              channelUsername: channel.username,
+              channelName: channel.name,
+              originalText: message.message.slice(0, 500),
+              originalMessageId: message.id,
+              priority: filterResult.priority,
+              category: filterResult.category,
+            },
           });
 
           // Помечаем как обработанное с привязкой к посту
           dedupStore.add(channel.username, message.id, post.id);
           this.stats.postsCreated++;
 
-          console.log(`  📝 Создан пост: ${post.id}`);
+          console.log(`  📝 Создан пост (review): ${post.id}`);
           console.log(`     Превью: ${rewritten.content.slice(0, 100)}...`);
+
+          // Уведомляем ревьюеров (Алексей + Регина)
+          try {
+            await notifyReviewers(post);
+          } catch (notifyError) {
+            console.warn(`  ⚠️ Не удалось отправить уведомление:`, notifyError);
+          }
         } else {
           // Если пересказ не удался, всё равно помечаем как просмотренное
           dedupStore.markSeen(channel.username, message.id);
@@ -275,7 +304,7 @@ export class ChannelMonitor {
 
     // Статистика очереди
     const queueStats = postsStore.getStats();
-    console.log(`\n📋 Очередь постов: ${queueStats.pending} pending, ${queueStats.published} published`);
+    console.log(`\n📋 Очередь: ${queueStats.review} review, ${queueStats.approved} approved, ${queueStats.pending} pending, ${queueStats.published} published`);
 
     // Статистика дедупликации
     const dedupStats = dedupStore.getStats();

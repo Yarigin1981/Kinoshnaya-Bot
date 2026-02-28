@@ -15,6 +15,11 @@ export const config = {
   },
   admin: {
     userId: process.env.ADMIN_USER_ID || '',
+    // Все кто получают уведомления о новых постах из мониторинга
+    reviewerIds: [
+      process.env.ADMIN_USER_ID,
+      process.env.REGINA_USER_ID,
+    ].filter(Boolean) as string[],
   },
   // Расписание публикаций (MSK)
   schedule: {

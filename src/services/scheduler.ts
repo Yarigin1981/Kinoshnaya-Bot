@@ -39,17 +39,19 @@ export class SchedulerService {
   }
 
   private async publishNextPost() {
-    const post = postsStore.getNextPending();
+    // approved (одобренные из мониторинга) идут первыми, затем pending (авторский)
+    const post = postsStore.getNextForPublish();
 
     if (!post) {
-      console.log('⚠️ Нет постов в очереди');
+      console.log('⚠️ Нет постов в очереди (только review — ждут одобрения)');
       return;
     }
 
     try {
       await telegramService.sendToChannel(post.content);
       postsStore.markAsPublished(post.id);
-      console.log(`✅ Опубликован пост: ${post.id}`);
+      const sourceInfo = post.source?.channelName ? ` (из: ${post.source.channelName})` : ' (авторский)';
+      console.log(`✅ Опубликован пост: ${post.id}${sourceInfo}`);
     } catch (error) {
       console.error(`❌ Ошибка публикации поста ${post.id}:`, error);
     }
