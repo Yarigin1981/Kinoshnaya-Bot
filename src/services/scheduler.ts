@@ -1,13 +1,14 @@
 import cron from 'node-cron';
 import { telegramService } from './telegram';
 import { postsStore } from '../data/posts-store';
+import { getChannelMonitor } from '../monitoring/monitor';
+import { config } from '../config';
 
 export class SchedulerService {
   private jobs: cron.ScheduledTask[] = [];
 
   /**
-   * Запуск расписания публикаций
-   * По умолчанию: 10:00 и 19:00 MSK
+   * Запуск расписания публикаций + мониторинга
    */
   start() {
     // Утренний пост в 10:00 MSK
@@ -36,6 +37,28 @@ export class SchedulerService {
 
     this.jobs.push(morningJob, eveningJob);
     console.log('📅 Расписание запущено: 10:00 и 19:00 MSK');
+
+    // Мониторинг каналов КД
+    if (config.monitoring.enabled) {
+      const interval = config.monitoring.intervalMinutes;
+      const monitorJob = cron.schedule(
+        `*/${interval} * * * *`,
+        async () => {
+          console.log('🔍 Запуск мониторинга по расписанию...');
+          try {
+            const monitor = getChannelMonitor();
+            await monitor.run();
+          } catch (error) {
+            console.error('❌ Ошибка мониторинга:', error);
+          }
+        },
+        {
+          timezone: 'Europe/Moscow',
+        }
+      );
+      this.jobs.push(monitorJob);
+      console.log(`📡 Мониторинг каналов: каждые ${interval} мин`);
+    }
   }
 
   private async publishNextPost() {
