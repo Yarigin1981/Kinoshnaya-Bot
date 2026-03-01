@@ -20,7 +20,10 @@ interface SeenData {
   lastCleanup: string;
 }
 
-const DATA_DIR = path.join(__dirname, '../data');
+// Railway Volume или локальная папка
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'data')
+  : path.join(__dirname, '../data');
 const SEEN_FILE = path.join(DATA_DIR, 'seen-messages.json');
 
 // Хранить записи не дольше 30 дней

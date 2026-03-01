@@ -29,9 +29,24 @@ export interface Post {
   createdAt: string;
 }
 
-// Используем путь относительно корня проекта, а не __dirname
-// Это работает и в dev (src/), и в production (dist/)
-const POSTS_FILE = path.join(process.cwd(), 'src', 'data', 'posts.json');
+// Railway Volume или локальная папка для хранения данных
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'data')
+  : path.join(process.cwd(), 'src', 'data');
+
+// Создаём директорию если нет
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
+
+// При первом запуске на Railway — копируем начальные данные из образа
+const SEED_FILE = path.join(process.cwd(), 'src', 'data', 'posts.json');
+if (!fs.existsSync(POSTS_FILE) && fs.existsSync(SEED_FILE)) {
+  console.log('📦 Первый запуск: копируем posts.json в volume');
+  fs.copyFileSync(SEED_FILE, POSTS_FILE);
+}
 
 class PostsStore {
   private posts: Post[] = [];

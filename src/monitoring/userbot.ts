@@ -44,9 +44,11 @@ export class UserBot {
       {
         connectionRetries: 5,
         retryDelay: 1000,
+        autoReconnect: false,  // не переподключаемся — используем connect/disconnect per run
       }
     );
 
+    // Подключаемся без запуска update loop (нам не нужны real-time обновления)
     await this.client.connect();
     this.connected = true;
     console.log('🔗 UserBot подключен');
@@ -139,7 +141,12 @@ export class UserBot {
    */
   async disconnect(): Promise<void> {
     if (this.client && this.connected) {
-      await this.client.disconnect();
+      try {
+        await this.client.disconnect();
+      } catch {
+        // Игнорируем ошибки при отключении
+      }
+      this.client = null;
       this.connected = false;
       console.log('🔌 UserBot отключен');
     }
