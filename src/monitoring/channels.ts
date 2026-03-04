@@ -442,6 +442,13 @@ export const CHANNELS: Channel[] = [
     specialization: 'ВГИК 2025',
   },
 
+  {
+    username: '@casting_chef',
+    name: 'Casting Chef',
+    type: 'public',
+    priority: 'normal',
+  },
+
   // ============================================
   // ЗАКРЫТЫЕ КАНАЛЫ (требуют вступления вручную)
   // ============================================
