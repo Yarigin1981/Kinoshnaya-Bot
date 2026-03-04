@@ -6,7 +6,7 @@ export { CHANNELS, getActiveChannels, getHighPriorityChannels, getPublicChannels
 export type { Channel } from './channels';
 export { filterMessage, looksLikeCasting, extractCastingInfo } from './filter';
 export type { FilterResult } from './filter';
-export { rewriterService } from './rewriter';
+export { rewriterService, buildPostLink, buildChannelLink } from './rewriter';
 export type { RewriteResult } from './rewriter';
 export { dedupStore } from './dedup-store';
 export { ChannelMonitor, getChannelMonitor } from './monitor';

@@ -2,15 +2,32 @@ import cron from 'node-cron';
 import { telegramService } from './telegram';
 import { postsStore } from '../data/posts-store';
 import { getChannelMonitor } from '../monitoring/monitor';
+import { sendDailyDigest } from './notifier';
 import { config } from '../config';
 
 export class SchedulerService {
   private jobs: cron.ScheduledTask[] = [];
 
   /**
-   * Запуск расписания публикаций + мониторинга
+   * Запуск расписания публикаций + мониторинга + утренний дайджест
    */
   start() {
+    // Утренний дайджест в 09:00 MSK (до первого поста)
+    const digestJob = cron.schedule(
+      '0 9 * * *',
+      async () => {
+        console.log('📋 Отправка утреннего дайджеста...');
+        try {
+          await sendDailyDigest();
+        } catch (error) {
+          console.error('❌ Ошибка отправки дайджеста:', error);
+        }
+      },
+      {
+        timezone: 'Europe/Moscow',
+      }
+    );
+
     // Утренний пост в 10:00 MSK
     const morningJob = cron.schedule(
       '0 10 * * *',
@@ -35,8 +52,8 @@ export class SchedulerService {
       }
     );
 
-    this.jobs.push(morningJob, eveningJob);
-    console.log('📅 Расписание запущено: 10:00 и 19:00 MSK');
+    this.jobs.push(digestJob, morningJob, eveningJob);
+    console.log('📅 Расписание запущено: дайджест 09:00, посты 10:00 и 19:00 MSK');
 
     // Мониторинг каналов КД
     if (config.monitoring.enabled) {

@@ -9,6 +9,7 @@ export interface Channel {
   name: string; // Имя КД
   type: 'public' | 'private';
   priority: 'high' | 'normal' | 'low';
+  active?: boolean; // false = деактивирован (переименован, удалён, invite истёк)
   specialization?: string;
   region?: string;
 }
@@ -211,6 +212,7 @@ export const CHANNELS: Channel[] = [
     name: 'Рита Ленских',
     type: 'public',
     priority: 'normal',
+    active: false, // username не найден (переименован/удалён)
   },
   {
     username: '@may_casting',
@@ -448,18 +450,21 @@ export const CHANNELS: Channel[] = [
     name: 'Ольга Квашенникова',
     type: 'private',
     priority: 'normal',
+    active: false, // invite link истёк
   },
   {
     username: 'https://t.me/+8krJ2S9xjukxNzEy',
     name: 'Наталья Овсянникова',
     type: 'private',
     priority: 'normal',
+    active: false, // invite link истёк
   },
   {
     username: 'https://t.me/+vixqhX2cE6RhZGVi',
     name: 'Лена Субботина',
     type: 'private',
     priority: 'normal',
+    active: false, // invite link истёк
   },
 
   // ============================================
@@ -499,10 +504,10 @@ export const CHANNELS: Channel[] = [
 
 /**
  * Возвращает активные каналы для мониторинга
- * (исключает low priority)
+ * (исключает low priority и деактивированные)
  */
 export function getActiveChannels(): Channel[] {
-  return CHANNELS.filter((c) => c.priority !== 'low');
+  return CHANNELS.filter((c) => c.priority !== 'low' && c.active !== false);
 }
 
 /**

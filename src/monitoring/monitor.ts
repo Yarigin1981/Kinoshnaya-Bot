@@ -4,7 +4,7 @@
  * Координирует работу:
  * - UserBot (чтение каналов)
  * - Filter (отсеивание нерелевантного)
- * - Rewriter (пересказ через Claude)
+ * - Rewriter (адаптация лица + ссылка на источник)
  * - PostsStore (добавление в очередь)
  */
 import { getUserBot } from './userbot';
@@ -13,7 +13,7 @@ import { filterMessage, FilterResult } from './filter';
 import { rewriterService } from './rewriter';
 import { dedupStore } from './dedup-store';
 import { postsStore } from '../data/posts-store';
-import { notifyReviewers, notifyMonitoringComplete } from '../services/notifier';
+import { notifyReviewers, accumulateMonitoringStats } from '../services/notifier';
 import { config } from '../config';
 
 export interface MonitorStats {
@@ -78,16 +78,12 @@ export class ChannelMonitor {
 
       await userbot.disconnect();
 
-      // Отправляем дайджест ревьюерам
-      try {
-        await notifyMonitoringComplete(
-          this.stats.postsCreated,
-          this.stats.channelsChecked,
-          this.stats.errors,
-        );
-      } catch (notifyError) {
-        console.warn('⚠️ Не удалось отправить дайджест:', notifyError);
-      }
+      // Накапливаем статистику (дайджест отправится утром)
+      accumulateMonitoringStats(
+        this.stats.postsCreated,
+        this.stats.channelsChecked,
+        this.stats.errors,
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.stats.errors.push(`Критическая ошибка: ${errorMsg}`);
@@ -152,7 +148,11 @@ export class ChannelMonitor {
         const rewritten = await rewriterService.rewritePost(
           message.message,
           channel.username,
-          filterResult.category || 'news'
+          filterResult.category || 'news',
+          {
+            channelName: channel.name,
+            messageId: message.id,
+          }
         );
 
         if (rewritten) {
