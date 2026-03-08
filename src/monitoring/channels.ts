@@ -448,6 +448,12 @@ export const CHANNELS: Channel[] = [
     type: 'public',
     priority: 'normal',
   },
+  {
+    username: '@ekleryacast',
+    name: 'Ekleryacast',
+    type: 'public',
+    priority: 'normal',
+  },
 
   // ============================================
   // ЗАКРЫТЫЕ КАНАЛЫ (требуют вступления вручную)
