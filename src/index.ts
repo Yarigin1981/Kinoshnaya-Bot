@@ -74,6 +74,7 @@ bot.command('start', ctx => {
 // ============================================
 bot.command('status', ctx => {
   const stats = postsStore.getStats();
+  const channels = config.telegram.channelIds.join(', ');
   ctx.reply(`📊 Статус очереди:
 
 📥 На ревью: ${stats.review}
@@ -83,6 +84,7 @@ bot.command('status', ctx => {
 ❌ Отклонено: ${stats.rejected}
 
 📋 Всего: ${stats.total}
+📡 Каналы: ${channels}
 ⏰ Расписание: 10:00 и 19:00 MSK`);
 });
 
@@ -444,6 +446,7 @@ async function main() {
 
   const stats = postsStore.getStats();
   console.log(`\n✅ Бот запущен!`);
+  console.log(`📡 Каналы: ${config.telegram.channelIds.join(', ')}`);
   console.log(`📊 Очередь: ${stats.approved} approved, ${stats.pending} pending`);
   console.log(`📥 На ревью: ${stats.review}`);
   console.log(`⏰ Автопостинг: 10:00 и 19:00 MSK`);

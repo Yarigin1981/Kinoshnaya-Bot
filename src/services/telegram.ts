@@ -8,39 +8,66 @@ export class TelegramService {
     this.bot = new Telegraf(config.telegram.botToken);
   }
 
+  /**
+   * Отправить текст во все настроенные каналы
+   */
   async sendToChannel(text: string, options?: { parseMode?: 'HTML' | 'Markdown' }) {
-    try {
-      const result = await this.bot.telegram.sendMessage(
-        config.telegram.channelId,
-        text,
-        {
-          parse_mode: options?.parseMode || 'HTML',
-        }
-      );
-      console.log(`✅ Пост опубликован: ${result.message_id}`);
-      return result;
-    } catch (error) {
-      console.error('❌ Ошибка публикации:', error);
-      throw error;
+    const channels = config.telegram.channelIds;
+    const results = [];
+
+    for (const channelId of channels) {
+      try {
+        const result = await this.bot.telegram.sendMessage(
+          channelId,
+          text,
+          {
+            parse_mode: options?.parseMode || 'HTML',
+          }
+        );
+        console.log(`✅ Пост опубликован в ${channelId}: ${result.message_id}`);
+        results.push(result);
+      } catch (error) {
+        console.error(`❌ Ошибка публикации в ${channelId}:`, error);
+        // Продолжаем отправку в остальные каналы
+      }
     }
+
+    if (results.length === 0) {
+      throw new Error('Не удалось опубликовать ни в один канал');
+    }
+
+    return results[0]; // Возвращаем результат первого канала для совместимости
   }
 
+  /**
+   * Отправить фото во все настроенные каналы
+   */
   async sendPhoto(photoUrl: string, caption: string) {
-    try {
-      const result = await this.bot.telegram.sendPhoto(
-        config.telegram.channelId,
-        photoUrl,
-        {
-          caption,
-          parse_mode: 'HTML',
-        }
-      );
-      console.log(`✅ Фото опубликовано: ${result.message_id}`);
-      return result;
-    } catch (error) {
-      console.error('❌ Ошибка публикации фото:', error);
-      throw error;
+    const channels = config.telegram.channelIds;
+    const results = [];
+
+    for (const channelId of channels) {
+      try {
+        const result = await this.bot.telegram.sendPhoto(
+          channelId,
+          photoUrl,
+          {
+            caption,
+            parse_mode: 'HTML',
+          }
+        );
+        console.log(`✅ Фото опубликовано в ${channelId}: ${result.message_id}`);
+        results.push(result);
+      } catch (error) {
+        console.error(`❌ Ошибка публикации фото в ${channelId}:`, error);
+      }
     }
+
+    if (results.length === 0) {
+      throw new Error('Не удалось опубликовать фото ни в один канал');
+    }
+
+    return results[0];
   }
 
   getBotInstance() {

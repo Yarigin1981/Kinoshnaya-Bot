@@ -9,6 +9,11 @@ export const config = {
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     channelId: process.env.TELEGRAM_CHANNEL_ID || '@kinoshnaya3000',
+    // Дополнительные каналы для кросспостинга (через запятую)
+    channelIds: (process.env.TELEGRAM_CHANNEL_IDS || process.env.TELEGRAM_CHANNEL_ID || '@kinoshnaya3000')
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean),
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
